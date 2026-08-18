@@ -530,7 +530,7 @@
             { q: "ফাস্ট ফুড নাকি ট্র্যাডিশনাল খাবার?", options: ["ফাস্ট ফুড", "ট্র্যাডিশনাল খাবার"] },
             { q: "রোমান্টিক উপন্যাস নাকি থ্রিলার বই?", options: ["রোমান্টিক উপন্যাস", "থ্রিলার বই"] },
             { q: "গ্রীষ্মের ছুটি নাকি শীতের আমেজ?", options: ["গ্রীষ্মের ছুটি", "শীতের আমেজ"] },
-            { q: "সাইকেল চালানো নাকি বাইক রাইড?", options: ["সাইকেল রাইড", "বাইক রাইড"] },
+            { q: "সাইকেল চালানো নাকি বাইক রাইড?", options: ["সাইকেল রাইড", "বাইک রাইড"] },
             { q: "সকাল বেলার ব্যায়াম নাকি রিলাক্সিং ঘুম?", options: ["সকালের ব্যায়াম", "রিলাক্সিং ঘুম"] },
             { q: "কালো রং নাকি সাদা রং?", options: ["কালো রং", "সাদা রং"] },
             { q: "লাল গোলাপ নাকি অন্য ফুল?", options: ["লাল গোলাপ", "অন্য ফুল"] },
@@ -607,9 +607,12 @@
                 setTimeout(() => document.getElementById('join-name-input').focus(), 300);
             }
 
-            // Cross-country connection configurations (STUN servers for international NAT traversal)
-            getPeerConfig() {
+            // Global PeerJS Cloud Config with STUN fallback for cross-country routing
+            getPeerOptions() {
                 return {
+                    host: '0.peerjs.com',
+                    port: 443,
+                    secure: true,
                     config: {
                         iceServers: [
                             { urls: 'stun:stun.l.google.com:19302' },
@@ -638,10 +641,10 @@
                 document.getElementById('display-room-code').innerText = randomCode;
 
                 if (this.peer) this.peer.destroy();
-                this.peer = new Peer(this.myID, this.getPeerConfig());
+                this.peer = new Peer(this.myID, this.getPeerOptions());
 
                 this.peer.on('open', (id) => {
-                    console.log('Session initialized:', id);
+                    console.log('Session initialized on PeerCloud:', id);
                 });
 
                 this.peer.on('connection', (connection) => {
@@ -651,7 +654,7 @@
 
                 this.peer.on('error', (err) => {
                     console.error(err);
-                    alert("সেশন তৈরি করতে সমস্যা হয়েছে। পুনরায় চেষ্টা করুন।");
+                    alert("সেশন তৈরি করতে সমস্যা হয়েছে। দয়া করে পেজটি রিফ্রেশ করে আবার চেষ্টা করুন।");
                     this.goHome();
                 });
             }
@@ -671,7 +674,7 @@
                 const hostPeerId = "mmoner-mil-" + code;
 
                 if (this.peer) this.peer.destroy();
-                this.peer = new Peer(undefined, this.getPeerConfig());
+                this.peer = new Peer(undefined, this.getPeerOptions());
 
                 this.peer.on('open', () => {
                     this.conn = this.peer.connect(hostPeerId, { reliable: true });
@@ -680,7 +683,7 @@
 
                 this.peer.on('error', (err) => {
                     console.error(err);
-                    alert("সেশনটি পাওয়া যায়নি অথবা কোড ভুল রয়েছে। আন্তর্জাতিক সংযোগের জন্য কোডটি আবার চেক করুন।");
+                    alert("সেশনটি পাওয়া যায়নি বা সংযোগ স্থাপন করা যায়নি। কোডটি সঠিক আছে কিনা এবং হোস্টের ট্যাবটি ওপেন আছে কিনা তা চেক করুন।");
                 });
             }
 
