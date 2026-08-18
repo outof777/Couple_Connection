@@ -552,12 +552,10 @@
                 this.myAnswers = [];
                 this.partnerAnswers = [];
                 this.questions = [];
-                this.isMyTurnToAnswer = true;
 
                 this.initKeyboardEvents();
             }
 
-            // Shuffle array to ensure unique questions per session
             getRandomQuestions(arr, count = 10) {
                 const shuffled = [...arr].sort(() => 0.5 - Math.random());
                 return shuffled.slice(0, count);
@@ -592,7 +590,6 @@
                 this.partnerAnswers = [];
                 this.questions = [];
                 
-                // Clear input fields
                 document.getElementById('host-name-input').value = '';
                 document.getElementById('join-name-input').value = '';
                 document.getElementById('room-code-input').value = '';
@@ -610,6 +607,19 @@
                 setTimeout(() => document.getElementById('join-name-input').focus(), 300);
             }
 
+            // Cross-country connection configurations (STUN servers for international NAT traversal)
+            getPeerConfig() {
+                return {
+                    config: {
+                        iceServers: [
+                            { urls: 'stun:stun.l.google.com:19302' },
+                            { urls: 'stun:stun1.l.google.com:19302' },
+                            { urls: 'stun:stun2.l.google.com:19302' }
+                        ]
+                    }
+                };
+            }
+
             createRoom() {
                 const name = document.getElementById('host-name-input').value.trim();
                 if (!name) {
@@ -619,7 +629,6 @@
                 this.myName = name;
                 this.isHost = true;
 
-                // Pick random 10 questions for this session
                 this.questions = this.getRandomQuestions(masterQuestionDatabase, 10);
 
                 const randomCode = Math.floor(1000 + Math.random() * 9000).toString();
@@ -629,7 +638,7 @@
                 document.getElementById('display-room-code').innerText = randomCode;
 
                 if (this.peer) this.peer.destroy();
-                this.peer = new Peer(this.myID);
+                this.peer = new Peer(this.myID, this.getPeerConfig());
 
                 this.peer.on('open', (id) => {
                     console.log('Session initialized:', id);
@@ -662,23 +671,22 @@
                 const hostPeerId = "mmoner-mil-" + code;
 
                 if (this.peer) this.peer.destroy();
-                this.peer = new Peer();
+                this.peer = new Peer(undefined, this.getPeerConfig());
 
                 this.peer.on('open', () => {
-                    this.conn = this.peer.connect(hostPeerId);
+                    this.conn = this.peer.connect(hostPeerId, { reliable: true });
                     this.setupConnectionHandlers();
                 });
 
                 this.peer.on('error', (err) => {
                     console.error(err);
-                    alert("সেশনটি পাওয়া যায়নি অথবা কোড ভুল রয়েছে।");
+                    alert("সেশনটি পাওয়া যায়নি অথবা কোড ভুল রয়েছে। আন্তর্জাতিক সংযোগের জন্য কোডটি আবার চেক করুন।");
                 });
             }
 
             setupConnectionHandlers() {
                 this.conn.on('open', () => {
                     console.log("Connected to peer successfully.");
-                    // Send name and selected questions (if host)
                     if (this.isHost) {
                         this.conn.send({ 
                             type: 'INIT_DATA', 
@@ -706,11 +714,10 @@
             handleIncomingData(data) {
                 if (data.type === 'INIT_DATA') {
                     this.partnerName = data.name;
-                    this.questions = data.questions; // Sync questions from host
+                    this.questions = data.questions;
                     this.startQuizSession();
                 } else if (data.type === 'INIT_NAME') {
                     this.partnerName = data.name;
-                    // Reply back with host's name and questions
                     this.conn.send({ 
                         type: 'INIT_DATA', 
                         name: this.myName, 
@@ -758,8 +765,6 @@
 
             submitMyAnswer(option) {
                 this.myAnswers.push(option);
-
-                // Transmit answer over P2P channel
                 this.conn.send({ type: 'ANSWER', answer: option });
 
                 document.getElementById('options-container').style.display = 'none';
