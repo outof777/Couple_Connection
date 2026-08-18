@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>মনের মিল ❤️ - Online Couple Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- PeerJS CDN for P2P Remote Connection -->
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <style>
+        :root {
+            --primary: #FF4D8D;
+            --secondary: #7C3AED;
+            --bg: #0F172A;
+            --card: rgba(255, 255, 255, 0.08);
+            --card-border: rgba(255, 255, 255, 0.12);
+            --text: #FFFFFF;
+            --text-muted: #94A3B8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Hind Siliguri', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        .background-glow {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .glow-circle {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.35;
+        }
+
+        .circle-1 {
+            width: 300px;
+            height: 300px;
+            background: var(--primary);
+            top: -50px;
+            left: -50px;
+            animation: float 8s ease-in-out infinite alternate;
+        }
+
+        .circle-2 {
+            width: 350px;
+            height: 350px;
+            background: var(--secondary);
+            bottom: -50px;
+            right: -50px;
+            animation: float 10s ease-in-out infinite alternate-reverse;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px) scale(1); }
+            100% { transform: translateY(30px) scale(1.1); }
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 480px;
+            padding: 20px;
+        }
+
+        .screen {
+            display: none;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+
+        .screen.active {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .glass-card {
+            background: var(--card);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 32px 24px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .heart-icon-pulse {
+            font-size: 54px;
+            margin-bottom: 12px;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+            100% { transform: scale(1); }
+        }
+
+        .main-title {
+            font-size: 36px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), #FF80AB);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            font-size: 15px;
+            color: var(--text-muted);
+            line-height: 1.5;
+            margin-bottom: 24px;
+        }
+
+        .primary-btn {
+            width: 100%;
+            padding: 14px;
+            font-size: 17px;
+            font-weight: 600;
+            color: #FFFFFF;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(255, 77, 141, 0.3);
+            transition: all 0.3s ease;
+            margin-bottom: 12px;
+        }
+
+        .primary-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px rgba(255, 77, 141, 0.5);
+        }
+
+        .secondary-btn {
+            width: 100%;
+            padding: 14px;
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--text);
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .secondary-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        h2 {
+            font-size: 22px;
+            margin-bottom: 8px;
+        }
+
+        .sub-text {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 14px 18px;
+            font-size: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 14px;
+            color: var(--text);
+            text-align: center;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--primary);
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 15px rgba(255, 77, 141, 0.2);
+        }
+
+        .room-code-display {
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: 4px;
+            color: #FFD700;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 14px;
+            border-radius: 14px;
+            margin: 15px 0;
+            border: 1px dashed rgba(255, 215, 0, 0.4);
+        }
+
+        .quiz-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .badge {
+            font-size: 13px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 6px 12px;
+            border-radius: 20px;
+            color: var(--text-muted);
+        }
+
+        .turn-badge {
+            font-size: 13px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .question-title {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 24px;
+            min-height: 65px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .options-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option-btn {
+            width: 100%;
+            padding: 15px;
+            font-size: 17px;
+            font-weight: 500;
+            color: var(--text);
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .option-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        .waiting-box {
+            padding: 30px 0;
+            color: var(--text-muted);
+            font-size: 16px;
+        }
+
+        .spinner {
+            width: 45px;
+            height: 45px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .result-names {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .score-circle-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+
+        .score-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 30px rgba(255, 77, 141, 0.4);
+            animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        #score-number {
+            font-size: 34px;
+            font-weight: 700;
+            color: #FFFFFF;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            border-radius: 4px;
+            transition: width 1s ease-in-out;
+        }
+
+        .compatibility-badge {
+            display: inline-block;
+            padding: 6px 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 14px;
+            color: #FFD700;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+        }
+
+        .insight-text {
+            font-size: 14px;
+            color: var(--text-muted);
+            line-height: 1.5;
+            margin-bottom: 20px;
+            min-height: 45px;
+        }
+
+        @media (max-width: 480px) {
+            .glass-card { padding: 24px 18px; }
+            .main-title { font-size: 32px; }
+            .question-title { font-size: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="background-glow">
+        <div class="glow-circle circle-1"></div>
+        <div class="glow-circle circle-2"></div>
+    </div>
+
+    <div class="container">
+        <!-- Screen 1: Welcome & Mode Selection -->
+        <div id="screen-welcome" class="screen active">
+            <div class="glass-card">
+                <div class="heart-icon-pulse">❤️</div>
+                <h1 class="main-title">মনের মিল ❤️</h1>
+                <p class="subtitle">দূরত্ব যাই হোক না কেন,<br>অনলাইনে একসাথে খেলুন আপনাদের মনের মিল</p>
+                <button class="primary-btn" onclick="app.showHostSetup()">সেশন তৈরি করুন (Create Session)</button>
+                <button class="secondary-btn" onclick="app.showJoinSetup()">সেশনে যুক্ত হোন (Join Session)</button>
+            </div>
+        </div>
+
+        <!-- Screen 2A: Host Setup (Create Room) -->
+        <div id="screen-host-setup" class="screen">
+            <div class="glass-card">
+                <h2>আপনার নাম লিখুন</h2>
+                <p class="sub-text">সেশন তৈরি করার আগে আপনার নাম প্রদান করুন</p>
+                <div class="input-group">
+                    <input type="text" id="host-name-input" placeholder="আপনার নাম লিখুন" autocomplete="off">
+                </div>
+                <button class="primary-btn" onclick="app.createRoom()">সেশন কোড জেনারেট করুন</button>
+                <button class="secondary-btn" onclick="app.goHome()">ফিরে যান</button>
+            </div>
+        </div>
+
+        <!-- Screen 2B: Waiting for Partner Screen -->
+        <div id="screen-waiting" class="screen">
+            <div class="glass-card">
+                <h2>সেশন এক্সেস কোড</h2>
+                <p class="sub-text">নিচের সিক্রেট কোডটি আপনার সঙ্গীর সাথে শেয়ার করুন:</p>
+                <div id="display-room-code" class="room-code-display">----</div>
+                <div class="waiting-box">
+                    <div class="spinner"></div>
+                    <p>সঙ্গীর কানেক্ট হওয়ার জন্য অপেক্ষা করা হচ্ছে...</p>
+                </div>
+                <button class="secondary-btn" onclick="app.goHome()">বাতিল করুন</button>
+            </div>
+        </div>
+
+        <!-- Screen 3A: Join Setup (Join Room) -->
+        <div id="screen-join-setup" class="screen">
+            <div class="glass-card">
+                <h2>সেশনে যুক্ত হোন</h2>
+                <p class="sub-text">আপনার নাম এবং প্রাপ্ত সেশন কোডটি প্রদান করুন</p>
+                <div class="input-group">
+                    <input type="text" id="join-name-input" placeholder="আপনার নাম লিখুন" autocomplete="off">
+                </div>
+                <div class="input-group">
+                    <input type="text" id="room-code-input" placeholder="সেশন কোড লিখুন" autocomplete="off">
+                </div>
+                <button class="primary-btn" onclick="app.joinRoom()">কানেক্ট করুন</button>
+                <button class="secondary-btn" onclick="app.goHome()">ফিরে যান</button>
+            </div>
+        </div>
+
+        <!-- Screen 4: Quiz Game Screen -->
+        <div id="screen-quiz" class="screen">
+            <div class="glass-card">
+                <div class="quiz-header">
+                    <span id="progress-badge" class="badge">প্রশ্ন ১ / ১০</span>
+                    <span id="turn-indicator" class="turn-badge">উত্তর দেওয়ার পালা</span>
+                </div>
+                <h3 id="question-text" class="question-title">লোড হচ্ছে...</h3>
+                <div id="options-container" class="options-grid"></div>
+                <div id="waiting-answer-box" class="waiting-box" style="display: none;">
+                    <div class="spinner" style="width: 30px; height: 30px; border-width: 3px;"></div>
+                    <p id="waiting-msg">সঙ্গীর উত্তরের জন্য অপেক্ষা করা হচ্ছে...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Screen 5: Result Screen -->
+        <div id="screen-result" class="screen">
+            <div class="glass-card">
+                <h2 id="result-names" class="result-names">Nahid ❤️ Sara</h2>
+                
+                <div class="score-circle-container">
+                    <div class="score-circle">
+                        <span id="score-number">0%</span>
+                    </div>
+                </div>
+
+                <div class="progress-bar-container">
+                    <div id="result-progress-fill" class="progress-fill"></div>
+                </div>
+
+                <div id="badge-container" class="compatibility-badge">
+                    💞 Power Couple
+                </div>
+
+                <p id="insight-text" class="insight-text">
+                    আপনাদের পছন্দের মধ্যে অনেক মিল রয়েছে।
+                </p>
+
+                <button class="primary-btn" onclick="app.goHome()">হোমে ফিরে যান</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Database containing 55+ professional couple questions
+        const masterQuestionDatabase = [
+            { q: "চা নাকি কফি?", options: ["চা", "কফি"] },
+            { q: "সমুদ্র নাকি পাহাড়?", options: ["সমুদ্র", "পাহাড়"] },
+            { q: "সকাল নাকি রাত?", options: ["সকাল", "রাত"] },
+            { q: "বিড়াল নাকি কুকুর?", options: ["বিড়াল", "কুকুর"] },
+            { q: "পিজ্জা নাকি বিরিয়ানি?", options: ["পিজ্জা", "বিরিয়ানি"] },
+            { q: "বৃষ্টি নাকি রোদ?", options: ["বৃষ্টি", "রোদ"] },
+            { q: "সিনেমা নাকি বই?", options: ["সিনেমা", "বই"] },
+            { q: "কল নাকি মেসেজ?", options: ["কল", "মেসেজ"] },
+            { q: "দেশে ঘোরা নাকি বিদেশে ঘোরা?", options: ["দেশে ঘোরা", "বিদেশে ঘোরা"] },
+            { q: "চাকরি নাকি ব্যবসা?", options: ["চাকরি", "ব্যবসা"] },
+            { q: "শীত নাকি গরম?", options: ["শীত", "গরম"] },
+            { q: "মিষ্টি নাকি ঝাল?", options: ["মিষ্টি", "ঝাল"] },
+            { q: "আইসক্রিম নাকি চকলেট?", options: ["আইসক্রিম", "চকলেট"] },
+            { q: "শহরের জীবন নাকি গ্রামের শান্তি?", options: ["শহরের জীবন", "গ্রামের শান্তি"] },
+            { q: "গান শোনা নাকি মুভি দেখা?", options: ["গান শোনা", "মুভি দেখা"] },
+            { q: "আর্লি বার্ড নাকি নাইট আউল?", options: ["আর্লি বার্ড", "নাইট আউল"] },
+            { q: "কেনাকাটা নাকি সঞ্চয়?", options: ["কেনাকাটা", "সঞ্চয়"] },
+            { q: "রোমান্টিক ডেট নাকি অ্যাডভেঞ্চার?", options: ["রোমান্টিক ডেট", "অ্যাডভেঞ্চার"] },
+            { q: "সোশ্যাল মিডিয়া নাকি অফলাইন?", options: ["সোশ্যাল মিডিয়া", "অফলাইন"] },
+            { q: "সাসপেন্স নাকি কমেডি?", options: ["সাসপেন্স", "কমেডি"] },
+            { q: "হোমমেড ফুড নাকি রেস্টুরেন্ট?", options: ["হোমমেড ফুড", "রেস্টুরেন্ট"] },
+            { q: "লং ড্রাইভ নাকি লং ওয়াক?", options: ["লং ড্রাইভ", "লং ওয়াক"] },
+            { q: "সারপ্রাইজ গিফট নাকি দরকারী কিছু?", options: ["সারপ্রাইজ গিফট", "দরকারী কিছু"] },
+            { q: "সিনেমা হলে দেখা নাকি ওটিটি?", options: ["সিনেমা হল", "ওটিটি প্ল্যাটফর্ম"] },
+            { q: "ফটোশুট নাকি রিলস তৈরি?", options: ["ফটোশুট", "রিলস তৈরি"] },
+            { q: "সকাল সকাল ঘুম থেকে ওঠা নাকি দেরিতে ঘুমানো?", options: ["সকালে ওঠা", "দেরিতে ঘুমানো"] },
+            { q: "মিষ্টি গান নাকি রক মিউজিক?", options: ["মিষ্টি গান", "রক মিউজিক"] },
+            { q: "সাজগোজ করা নাকি সিম্পল থাকা?", options: ["সাজগোজ করা", "সিম্পল থাকা"] },
+            { q: "বাইরে খাওয়া নাকি ঘরে রান্না?", options: ["বাইরে খাওয়া", "ঘরে রান্না"] },
+            { q: "পেশাদার জীবন নাকি পার্সোনাল টাইম?", options: ["পেশাদার জীবন", "পার্সোনাল টাইম"] },
+            { q: "স্মার্টফোন নাকি ল্যাপটপ গ্যাজেট?", options: ["স্মার্টফোন", "ল্যাপটপ"] },
+            { q: "অতীতের স্মৃতিচারণ নাকি ভবিষ্যতের পরিকল্পনা?", options: ["স্মৃতিচারণ", "ভবিষ্যৎ পরিকল্পনা"] },
+            { q: "নদীর পাড় নাকি ছাদ বাগান?", options: ["নদীর পাড়", "ছাদ বাগান"] },
+            { q: "গোপন কথা শেয়ার করা নাকি সিক্রেট রাখা?", options: ["সব শেয়ার করা", "কিছু সিক্রেট রাখা"] },
+            { q: "ঝগড়ার পর আগে সরি বলা নাকি অপেক্ষা করা?", options: ["আগে সরি বলা", "অপেক্ষা করা"] },
+            { q: "বন্ধুদের আড্ডা নাকি দুজনের একান্ত সময়?", options: ["বন্ধুদের আড্ডা", "একান্ত সময়"] },
+            { q: "সকাল বেলার চা নাকি বিকালের স্ন্যাক্স?", options: ["সকালের চা", "বিকালের স্ন্যাক্স"] },
+            { q: "নতুন জায়গা এক্সপ্লোর করা নাকি পরিচিত জায়গায় যাওয়া?", options: ["নতুন জায়গা", "পরিচিত জায়গা"] },
+            { q: "বই পড়া নাকি পডকাস্ট শোনা?", options: ["বই পড়া", "পডকাস্ট শোনা"] },
+            { q: "অফিসিয়াল মিটিং নাকি ক্যাজুয়াল চ্যাট?", options: ["অফিসিয়াল মিটিং", "ক্যাজুয়াল চ্যাট"] },
+            { q: "হস্তশিল্প নাকি আধুনিক টেকনোলজি?", options: ["হস্তশিল্প", "আধুনিক টেকনোলজি"] },
+            { q: "শপিং মলের ভিড় নাকি অনলাইন শপিং?", options: ["শপিং মল", "অনলাইন শপিং"] },
+            { q: "ঘুমের আগে গল্প নাকি গান শোনা?", options: ["গল্প করা", "গান শোনা"] },
+            { q: "ফাস্ট ফুড নাকি ট্র্যাডিশনাল খাবার?", options: ["ফাস্ট ফুড", "ট্র্যাডিশনাল খাবার"] },
+            { q: "রোমান্টিক উপন্যাস নাকি থ্রিলার বই?", options: ["রোমান্টিক উপন্যাস", "থ্রিলার বই"] },
+            { q: "গ্রীষ্মের ছুটি নাকি শীতের আমেজ?", options: ["গ্রীষ্মের ছুটি", "শীতের আমেজ"] },
+            { q: "সাইকেল চালানো নাকি বাইক রাইড?", options: ["সাইকেল রাইড", "বাইক রাইড"] },
+            { q: "সকাল বেলার ব্যায়াম নাকি রিলাক্সিং ঘুম?", options: ["সকালের ব্যায়াম", "রিলাক্সিং ঘুম"] },
+            { q: "কালো রং নাকি সাদা রং?", options: ["কালো রং", "সাদা রং"] },
+            { q: "লাল গোলাপ নাকি অন্য ফুল?", options: ["লাল গোলাপ", "অন্য ফুল"] },
+            { q: "ফটোগ্রাফি নাকি ভিডিওগ্রাফি?", options: ["ফটোগ্রাফি", "ভিডিওগ্রাফি"] },
+            { q: "রোবটিক্স নাকি এআই প্রযুক্তি?", options: ["রোবটিক্স", "এআই প্রযুক্তি"] },
+            { q: "ক্লাউড কম্পিউটিং নাকি সাইবার সিকিউরিটি?", options: ["ক্লাউড কম্পিউটিং", "সাইবার সিকিউরিটি"] },
+            { q: "সফটওয়্যার ডেভেলপমেন্ট নাকি রিসার্চ?", options: ["সফটওয়্যার ডেভেলপমেন্ট", "রিসर्च"] }
+        ];
+
+        class OnlineCoupleApp {
+            constructor() {
+                this.peer = null;
+                this.conn = null;
+                this.isHost = false;
+                this.myID = "";
+                this.myName = "";
+                this.partnerName = "";
+                this.currentQuestionIndex = 0;
+                this.myAnswers = [];
+                this.partnerAnswers = [];
+                this.questions = [];
+                this.isMyTurnToAnswer = true;
+
+                this.initKeyboardEvents();
+            }
+
+            // Shuffle array to ensure unique questions per session
+            getRandomQuestions(arr, count = 10) {
+                const shuffled = [...arr].sort(() => 0.5 - Math.random());
+                return shuffled.slice(0, count);
+            }
+
+            initKeyboardEvents() {
+                document.getElementById('host-name-input').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.createRoom();
+                });
+                document.getElementById('join-name-input').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') document.getElementById('room-code-input').focus();
+                });
+                document.getElementById('room-code-input').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.joinRoom();
+                });
+            }
+
+            switchScreen(screenId) {
+                document.querySelectorAll('.screen').forEach(screen => {
+                    screen.classList.remove('active');
+                });
+                document.getElementById(screenId).classList.add('active');
+            }
+
+            goHome() {
+                if (this.conn) this.conn.close();
+                if (this.peer) this.peer.destroy();
+                this.peer = null;
+                this.conn = null;
+                this.currentQuestionIndex = 0;
+                this.myAnswers = [];
+                this.partnerAnswers = [];
+                this.questions = [];
+                
+                // Clear input fields
+                document.getElementById('host-name-input').value = '';
+                document.getElementById('join-name-input').value = '';
+                document.getElementById('room-code-input').value = '';
+
+                this.switchScreen('screen-welcome');
+            }
+
+            showHostSetup() {
+                this.switchScreen('screen-host-setup');
+                setTimeout(() => document.getElementById('host-name-input').focus(), 300);
+            }
+
+            showJoinSetup() {
+                this.switchScreen('screen-join-setup');
+                setTimeout(() => document.getElementById('join-name-input').focus(), 300);
+            }
+
+            createRoom() {
+                const name = document.getElementById('host-name-input').value.trim();
+                if (!name) {
+                    alert("দয়া করে আপনার নাম প্রদান করুন!");
+                    return;
+                }
+                this.myName = name;
+                this.isHost = true;
+
+                // Pick random 10 questions for this session
+                this.questions = this.getRandomQuestions(masterQuestionDatabase, 10);
+
+                const randomCode = Math.floor(1000 + Math.random() * 9000).toString();
+                this.myID = "mmoner-mil-" + randomCode;
+
+                this.switchScreen('screen-waiting');
+                document.getElementById('display-room-code').innerText = randomCode;
+
+                if (this.peer) this.peer.destroy();
+                this.peer = new Peer(this.myID);
+
+                this.peer.on('open', (id) => {
+                    console.log('Session initialized:', id);
+                });
+
+                this.peer.on('connection', (connection) => {
+                    this.conn = connection;
+                    this.setupConnectionHandlers();
+                });
+
+                this.peer.on('error', (err) => {
+                    console.error(err);
+                    alert("সেশন তৈরি করতে সমস্যা হয়েছে। পুনরায় চেষ্টা করুন।");
+                    this.goHome();
+                });
+            }
+
+            joinRoom() {
+                const name = document.getElementById('join-name-input').value.trim();
+                const code = document.getElementById('room-code-input').value.trim();
+
+                if (!name || !code) {
+                    alert("দয়া করে আপনার নাম এবং সঠিক সেশন কোড উভয়ই প্রদান করুন!");
+                    return;
+                }
+
+                this.myName = name;
+                this.isHost = false;
+
+                const hostPeerId = "mmoner-mil-" + code;
+
+                if (this.peer) this.peer.destroy();
+                this.peer = new Peer();
+
+                this.peer.on('open', () => {
+                    this.conn = this.peer.connect(hostPeerId);
+                    this.setupConnectionHandlers();
+                });
+
+                this.peer.on('error', (err) => {
+                    console.error(err);
+                    alert("সেশনটি পাওয়া যায়নি অথবা কোড ভুল রয়েছে।");
+                });
+            }
+
+            setupConnectionHandlers() {
+                this.conn.on('open', () => {
+                    console.log("Connected to peer successfully.");
+                    // Send name and selected questions (if host)
+                    if (this.isHost) {
+                        this.conn.send({ 
+                            type: 'INIT_DATA', 
+                            name: this.myName, 
+                            questions: this.questions 
+                        });
+                    } else {
+                        this.conn.send({ 
+                            type: 'INIT_NAME', 
+                            name: this.myName 
+                        });
+                    }
+                });
+
+                this.conn.on('data', (data) => {
+                    this.handleIncomingData(data);
+                });
+
+                this.conn.on('close', () => {
+                    alert("সঙ্গী সেশন থেকে বিচ্ছিন্ন হয়ে গেছেন!");
+                    this.goHome();
+                });
+            }
+
+            handleIncomingData(data) {
+                if (data.type === 'INIT_DATA') {
+                    this.partnerName = data.name;
+                    this.questions = data.questions; // Sync questions from host
+                    this.startQuizSession();
+                } else if (data.type === 'INIT_NAME') {
+                    this.partnerName = data.name;
+                    // Reply back with host's name and questions
+                    this.conn.send({ 
+                        type: 'INIT_DATA', 
+                        name: this.myName, 
+                        questions: this.questions 
+                    });
+                    this.startQuizSession();
+                } else if (data.type === 'ANSWER') {
+                    this.partnerAnswers.push(data.answer);
+                    this.handlePartnerAnswerReceived();
+                }
+            }
+
+            startQuizSession() {
+                this.currentQuestionIndex = 0;
+                this.myAnswers = [];
+                this.partnerAnswers = [];
+                this.switchScreen('screen-quiz');
+                this.renderCurrentState();
+            }
+
+            renderCurrentState() {
+                const qObj = this.questions[this.currentQuestionIndex];
+                const progressBadge = document.getElementById('progress-badge');
+                const turnIndicator = document.getElementById('turn-indicator');
+                const questionText = document.getElementById('question-text');
+                const optionsContainer = document.getElementById('options-container');
+                const waitingBox = document.getElementById('waiting-answer-box');
+
+                progressBadge.innerText = `প্রশ্ন ${this.currentQuestionIndex + 1} / ${this.questions.length}`;
+                questionText.innerText = qObj.q;
+
+                turnIndicator.innerText = `${this.myName} এর উত্তর`;
+                optionsContainer.style.display = 'flex';
+                waitingBox.style.display = 'none';
+
+                optionsContainer.innerHTML = '';
+                qObj.options.forEach((opt) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'option-btn';
+                    btn.innerText = opt;
+                    btn.onclick = () => this.submitMyAnswer(opt);
+                    optionsContainer.appendChild(btn);
+                });
+            }
+
+            submitMyAnswer(option) {
+                this.myAnswers.push(option);
+
+                // Transmit answer over P2P channel
+                this.conn.send({ type: 'ANSWER', answer: option });
+
+                document.getElementById('options-container').style.display = 'none';
+                const waitingBox = document.getElementById('waiting-answer-box');
+                waitingBox.style.display = 'block';
+                document.getElementById('waiting-msg').innerText = `${this.partnerName} এর উত্তরের জন্য অপেক্ষা করা হচ্ছে...`;
+
+                if (this.partnerAnswers.length > this.currentQuestionIndex) {
+                    this.proceedToNextOrResult();
+                }
+            }
+
+            handlePartnerAnswerReceived() {
+                const optionsContainer = document.getElementById('options-container');
+                if (optionsContainer.style.display === 'none' && this.partnerAnswers.length > this.currentQuestionIndex) {
+                    this.proceedToNextOrResult();
+                }
+            }
+
+            proceedToNextOrResult() {
+                this.currentQuestionIndex++;
+                if (this.currentQuestionIndex < this.questions.length) {
+                    setTimeout(() => {
+                        this.renderCurrentState();
+                    }, 500);
+                } else {
+                    this.calculateResults();
+                }
+            }
+
+            calculateResults() {
+                let matches = 0;
+                for (let i = 0; i < this.questions.length; i++) {
+                    if (this.myAnswers[i] === this.partnerAnswers[i]) {
+                        matches++;
+                    }
+                }
+
+                const percentage = Math.round((matches / this.questions.length) * 100);
+                this.showResultScreen(percentage);
+            }
+
+            showResultScreen(percentage) {
+                this.switchScreen('screen-result');
+
+                document.getElementById('result-names').innerText = `${this.myName} ❤️ ${this.partnerName}`;
+                
+                const scoreNumber = document.getElementById('score-number');
+                const progressFill = document.getElementById('result-progress-fill');
+                const badgeContainer = document.getElementById('badge-container');
+                const insightText = document.getElementById('insight-text');
+
+                let currentPerc = 0;
+                scoreNumber.innerText = `0%`;
+                progressFill.style.width = `0%`;
+
+                setTimeout(() => {
+                    progressFill.style.width = `${percentage}%`;
+                    const interval = setInterval(() => {
+                        if (currentPerc >= percentage) {
+                            clearInterval(interval);
+                        } else {
+                            currentPerc++;
+                            scoreNumber.innerText = `${currentPerc}%`;
+                        }
+                    }, 15);
+                }, 200);
+
+                let badgeText = "";
+                let insightMsg = "";
+
+                if (percentage >= 90) {
+                    badgeText = "💎 Soulmate";
+                    insightMsg = "অসাধারণ! দূরত্ব যাই হোক না কেন, আপনাদের মনের মিল একেবারে নিখুঁত!";
+                } else if (percentage >= 80) {
+                    badgeText = "💞 Power Couple";
+                    insightMsg = "দারুণ! দূরুত্ব কোনো বাধা নয়, আপনাদের পছন্দের মধ্যে চমৎকার সম্প্রীতি রয়েছে।";
+                } else if (percentage >= 70) {
+                    badgeText = "🌸 Great Match";
+                    insightMsg = "বেশ ভালো বোঝাপড়া রয়েছে আপনাদের মাঝে! চমৎকার মানসিক রসায়ন।";
+                } else if (percentage >= 50) {
+                    badgeText = "😊 Good Friends";
+                    insightMsg = "আপনাদের মাঝে সুন্দর বন্ধুত্ব ও দারুণ সম্প্রীতি বজায় রয়েছে।";
+                } else {
+                    badgeText = "😂 Opposites Attract";
+                    insightMsg = "বিপরীতমুখী স্বভাবের হলেও আপনারা একে অপরকে সুন্দরভাবে সম্পূর্ণ করেন!";
+                }
+
+                badgeContainer.innerText = badgeText;
+                insightText.innerText = insightMsg;
+            }
+        }
+
+        const app = new OnlineCoupleApp();
+    </script>
+</body>
+</html>
